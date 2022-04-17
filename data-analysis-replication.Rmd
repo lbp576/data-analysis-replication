@@ -1,0 +1,200 @@
+---
+title: "Data Analysis Replication"
+author: "Landon Porter"
+date: "4/17/2022"
+output: html_document of data analysis replication project
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+
+
+```{r}
+install.packages("ggthemes")
+install.packages("extrafont")
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(ggthemes)
+library(extrafont)
+library(readr)
+library(stats)
+
+#############
+#   FIG 1A  #
+#############
+
+#importing the dataset from the folder
+library(readxl)
+data <- read_xlsx('fig1A.xlsx')
+
+#to view the entire dataframe (excel sheet)
+data
+
+#how to view/read data using head()
+head(data)
+
+## Fig1A data visualization (chart: Toxoplasma gondii infection increased methylation at AVP promotor in MePD)
+
+#function for theme
+set_theme_plotly = function(){
+  theme_set(theme_classic())
+}
+
+
+### Scatter plot for fig1B (Enzyme: HpaII)
+p <- ggplot(data=data, aes(x=Without_Enzyme, y=With_Enzyme, colour = Infected)) 
+p <- p + geom_point(size=3, show.legend=TRUE)
+#geom_line function is used here to indicate zero methylation
+p <- p + geom_abline()
+p
+
+
+#########Explanation for the fig1A##########
+##The objective is to assess the change in methylation in infe#cted vs non-infected/control animals(rats). 
+##The impact of enzymes (e.g. HpaII) on the rats' DNA is measured by the change in the methylation and vice-versa. 
+##
+##
+##
+
+## Box plot for fig 1A (Enzyme: HpaII)
+fig1A <- boxplot(data$Change_in_CT ~ data$Infected,
+          ylab="Change in Ct", 
+          xlab = "",                        
+          main="HpaII boxplot",
+          color = "group", 
+          col=c("light green","red"))
+
+
+## T-statistic
+t.test(data$Without_Enzyme)
+
+##Hypothesis Testing
+library(mosaic)
+unbiased_experiment = do(10000)*nflip(n=48, prob=0.5)
+head(unbiased_experiment)
+
+#binomial distribution and statistical analysis for the hypothesis of treatment of infected animals with HpaII relative to no HpaII
+b <- nflip(n=48, prob=0.50)
+dbinom(b, 48, 0.50)
+# pbinom: cumulative tail probabilities, P(X <= k)
+pbinom(b, 48, 0.50)
+
+
+## binomial distribution and statistical analysis for the hypothesis of 7 out of 8 control animals exhibiting an increase in Ct value after HpaII application
+a <- nflip(n=24, prob=0.875)
+#dbinom: how likely is a SPECIFIC outcome, like exactly 19 coin flip wins?
+# this is the probability mass function of the binomial, i.e. P(X = k)
+dbinom(a, 24, 0.875)
+# pbinom: cumulative tail probabilities, P(X <= k)
+pbinom(a,24,0.875)
+#Histogram is right skewed meaning that it is not a normal distribution meanin ganimals with infection show a higher change in Ct value as compared to animals in the control group
+effect_on_Ct = rbinom(10000, size=48, prob=0.875)
+hist(effect_on_Ct)  
+
+
+### regression fig1A (scatterplot and boxplot on page 4 of the paper)
+
+#Statistical Linear regression model to analyze the impact of enzyme in the experiment on the change in Ct value
+model1 <- lm(Change_in_CT ~ Without_Enzyme + With_Enzyme, data = data)
+#summary statistics / descriptive statistical analysis (note that this is essentially perfect fit meaning summary may be unreliable)
+#the negative intercept means that baseline estimated value for change in Ct is negative (biologically harmful to the animal or depicting unhealthy or carrying disease)
+#p-value: < 2.2e-16 which is lesser than 0.05 meaning that our model is statistically significant
+#Adjusted R-squared of 1 is ideal meaning that our model explains 100% variation in the data which is unusual since no medical science experiement are 100% accurate (there may have been a data cleaning or transformation process with help of cherrypicking that would have resulted in this output)
+summary(model1)
+
+#Statistical Linear regression model to analyze the effect of experiment participants (animals) being infected on the change in Ct value due to HpaII enzyme
+## The difference between the Change in Ct for animals that are infected vs non-infected depicts the different in time that it takes the polymerace to make 1000 copies of AVP
+model2 <- lm(Change_in_CT ~ Infected, data=data)
+#summary statistics / descriptive statistical analysis (note that this is essentially perfect fit meaning summary may be unreliable)
+#the negative intercept means that baseline estimated value for change in Ct is negative (biologically harmful to the animal or depicting unhealthy or carrying disease)
+#p-value: 0.00193 which is lesser than 0.05 meaning that our model is statistically significant
+#Adjusted R-squared of 1 is ideal meaning that our model explains 100% variation in the data which is unusual since no medical science experiement are 100% accurate (there may have been a data cleaning or transformation process with help of cherrypicking that would have resulted in this output)
+summary(model2)
+## Which is why the linear regression beta coefficient (beta 1 = parameter estimate for "infected" rat) is -1.6 meaning with one unit change in the infected variable, there is a 1.6 unit change in the value of Ct, holding all else equal.
+## baseline coefficient (beta 0): -0.83 here accounts for the impact of control (non-infected) rat on the Change in Ct value, holding all else equal.
+
+
+### ANOVA (inferential statistics)
+source('https://tinyurl.com/y4krd9uy')
+simple_anova(model2)
+
+###alternative method ("bootstrapping") to using lm function for regression
+boot_lm1 = do(10000)*lm(Change_in_CT ~ Infected, data=resample(data))
+
+confint(boot_lm1) %>%
+  mutate_if(is.numeric, round, digits=3)
+
+### A model which accounts for an interaction term with animals being infected and are with enzyme HpaII
+model3 <- lm(Change_in_CT ~ Infected + Without_Enzyme + With_Enzyme + Infected*With_Enzyme, data=data)
+summary(model3)
+
+
+#####################################
+###### FIG 1B #########
+
+
+#importing the dataset from the folder
+library(readxl)
+data1 <- read_xlsx('fig1B.xlsx')
+
+#to view the entire dataframe (excel sheet)
+data1
+
+#how to view/read data using head()
+head(data1)
+
+## Scatter plot for fig 1B (Enzyme: BstUI)
+s <- ggplot(data=data1, aes(x=Without_Enzyme, y=With_Enzyme, colour = Infected)) 
+s <- s + geom_point(size=3, show.legend=TRUE)
+#geom_line function is used here to indicate zero methylation
+s <- s + geom_abline()
+s
+
+### Box plot for fig 1B (Enzyme: BstUI)
+fig1B <- boxplot(data1$Change_in_CT ~ data1$Infected,
+                 ylab="Change in Ct", 
+                 xlab = "",                        
+                 main="BstUI boxplot",
+                 color = "group", 
+                 col=c("light green","red"))
+
+### regression fig1B (scatterplot and boxplot on page 4 of the paper)
+
+#Statistical Linear regression model to analyze the impact of enzyme in the experiment on the change in Ct value
+model4 <- lm(Change_in_CT ~ Without_Enzyme + With_Enzyme, data = data1)
+#summary statistics / descriptive statistical analysis (note that this is essentially perfect fit meaning summary may be unreliable)
+#the negative intercept means that baseline estimated value for change in Ct is negative (biologically harmful to the animal or depicting unhealthy or carrying disease)
+#p-value: < 2.2e-16 which is lesser than 0.05 meaning that our model is statistically significant
+#Adjusted R-squared of 1 is ideal meaning that our model explains 100% variation in the data which is unusual since no medical science experiement are 100% accurate (there may have been a data cleaning or transformation process with help of cherrypicking that would have resulted in this output)
+summary(model4)
+
+
+
+
+#Statistical Linear regression model to analyze the effect of experiment participants (animals) being infected on the change in Ct value due to HpaII enzyme
+## The difference between the Change in Ct for animals that are infected vs non-infected depicts the different in time that it takes the polymerace to make 1000 copies of AVP
+model5 <- lm(Change_in_CT ~ Infected, data=data1)
+#summary statistics / descriptive statistical analysis (note that this is essentially perfect fit meaning summary may be unreliable)
+#the negative intercept means that baseline estimated value for change in Ct is negative (biologically harmful to the animal or depicting unhealthy or carrying disease)
+#p-value: 0.008398 which is lesser than 0.05 meaning that our model is statistically significant
+#Adjusted R-squared of 0.3588 isn't a good R-squared number for the model describing the variance.
+## Which is why the linear regression beta coefficient (beta 1 = parameter estimate for "infected" rat) is -2.68 meaning with one unit change in the infected variable, there is a 1.6 unit change in the value of Ct, holding all else equal.
+## baseline coefficient (beta 0): -1.6226 here accounts for the impact of control (non-infected) rat on the Change in Ct value, holding all else equal.
+
+#### ANOVA (inferential statistics)
+simple_anova(model5)
+
+### A model which accounts for an interaction term with animals being infected and are with enzyme HpaII
+model6 <- lm(Change_in_CT ~ Infected + Without_Enzyme + With_Enzyme + Infected*With_Enzyme, data=data)
+summary(model6)
+
+
+##### Just a thought: The results for BstUI enzyme indicate that the change in Ct value is highly dependent on the enzyme BstUI's presence.
+```
