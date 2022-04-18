@@ -2,22 +2,33 @@
 title: "Data Analysis Replication"
 author: "Landon Porter"
 date: "4/17/2022"
-output: html_document of data analysis replication project
+output: html_document 
 ---
 
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+# These are some {knitr} options I typically use to format my 
+# ***RMarkdown*** documents in a consistent way
+# You should feel free to alter these or use other "chunk options" as
+# you see fit!
+# Sometimes, for example, you might want to suppress warnings or
+# messages, and that behavior can be set for specific code chunks in
+# the chunk header, e.g., ```{r warning = FALSE, echo = FALSE}
+knitr::opts_chunk$set(
+  eval = TRUE, # run code in code chunks
+  echo = TRUE, # render output of code chunks
+  warning = TRUE, # do not suppress "warnings"
+  message = TRUE, # do not suppress "messages"
+  comment = "##", # prefix for comment lines
+  prompt = ">", # prefix for code lines
+  tidy = TRUE,
+  tidy.opts = list(blank = FALSE, width.cutoff = 75),
+  fig.path = "img/", # name of folder for images
+  fig.align = "center" # centers any images on the page
+)
 
-## R Markdown
 
-
-
-
-```{r}
-install.packages("ggthemes")
-install.packages("extrafont")
-
+#library all of the necessary packages not found in base R 
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
@@ -26,52 +37,99 @@ library(extrafont)
 library(readr)
 library(stats)
 
-#############
-#   FIG 1A  #
-#############
+```
 
-#importing the dataset from the folder
-library(readxl)
-data <- read_xlsx('fig1A.xlsx')
+## Introduction 
 
-#to view the entire dataframe (excel sheet)
+In this paper the authors Dass et al. investigate the mechanism by which Toxoplasma gondii (a parasitic protozoan) induces behavioral changes in rats. They show that Toxoplasma gondii infections results in a change in the DNA methylation of arginine vasopressin (AVP) within the medial amygdala of male rats. Specifically, they demonstrated that hypomethylation of the AVP promoter caused an increase in AVP expression within infected rats.  This increase in AVT expression results in shocking behavioral changes. (I.e., affiliation to cat urine which assists in parasite’s transmission to its next host, -meow-). 
+
+In order to quantify the difference in AVT methylation between infected and non-infected (control) rats, the authors generated data and conducted analyses which I will be replicating in this project. To briefly summarize, methylation of AVP promoter was quantified using methylation sensitive restriction enzymes (either HpaII or BstUI) in combination with qualitative PCR (internal control = no enzyme treatment for both infected and non-infected groups). These enzymes selectively degrade DNA which is not methylated. Hypomethylation in each enzyme treated assay therefore manifests in reduced production of DNA templet via PCR. 
+
+Due to the degradation of hypomethylated AVP-DNA, infected samples required a greater number of PCR cycles to reach threshold (Ct) compared to infected samples with no methylation sensitive digestion enzymes (8/8 infected rats sampled). Interestingly, DNA samples from control rats NOT infected with Toxoplasma gondii also required a greater number of PCR cycles to reach threshold (Ct) when treated with either HpaII or BstUI compared to no enzyme (7/8 control rats sampled). However, the difference in Ct (Delta-Ct) between enzyme vs no enzyme treatments in control animals was not as large the Delta-Ct observed in experimental animals!  This suggests two things 1) that in non-infected control rats the AVT gene is not completely methylated and 2) that infected rats have substantially more non-methylated AVT. 
+
+The experimenters went on to conduct behavioral experiments to parse out the consequences of parasite induced AVT-hypomethylation (affiliation to cat urine). They finished by conducting rescue experiments in which infected rates were treated with methionine and aberrant behaviors were abolished. 
+
+For this project, however, I will focus on the results from the first experimental assays and attempt to replicate the data visualizations and statistical analyses the authors used to inform their conclusions. Specifically, I will be replicating 4 data visualizations (Fig1 A-D), 3 inferential statistics (T-test, ANOVA, and exact binomial test), and 2 descriptive statistics (box plots or lm functions????)        
+
+
+```{r}
+```
+
+
+FIGURE 1A SCATTER PLOT REPLICATION 
+
+Scatter plot description: Scatter Plot of Ct values (X= Ct without enzyme, Y=Ct with enzyme) for both control (Pink) and infected (Blue) groups. (y = x line indicates equal Ct for both enzyme and non-enzyme treated assays)
+
+```{r}
+
+#importing and visualizing the data set from github repository  
+
+data <- read_csv("https://raw.githubusercontent.com/lbp576/data-analysis-replication/main/data/fig1AB.csv")
+
+#to view the entire data frame 
 data
 
-#how to view/read data using head()
+#view/read data using head() function to see only the first 6 rows
 head(data)
 
-## Fig1A data visualization (chart: Toxoplasma gondii infection increased methylation at AVP promotor in MePD)
-
-#function for theme
+#function for setting the theme
 set_theme_plotly = function(){
   theme_set(theme_classic())
 }
 
 
-### Scatter plot for fig1B (Enzyme: HpaII)
+#Scatter plot for Fig1A (Enzyme: HpaII)
 p <- ggplot(data=data, aes(x=Without_Enzyme, y=With_Enzyme, colour = Infected)) 
 p <- p + geom_point(size=3, show.legend=TRUE)
 #geom_line function is used here to indicate zero methylation
 p <- p + geom_abline()
 p
+```
+Scatter plot interpretation: Toxoplasma gondii infection resulted in higher Ct value in HpaII enzyme treated assays compared to assays with no enzyme treatment. Both control and infected groups showed increase in Ct values after enzyme treatment; however, the distance from y = x line was larger for data points corresponding to the infected group (Blue) compared to control (Pink). 
 
 
-#########Explanation for the fig1A##########
-##The objective is to assess the change in methylation in infe#cted vs non-infected/control animals(rats). 
-##The impact of enzymes (e.g. HpaII) on the rats' DNA is measured by the change in the methylation and vice-versa. 
-##
-##
-##
 
-## Box plot for fig 1A (Enzyme: HpaII)
-fig1A <- boxplot(data$Change_in_CT ~ data$Infected,
+Fig 1A scatter plot from paper for comparison: 
+
+```{r eco=FLASE, Width="300px", message=FALSE}
+knitr::include_graphics("https://github.com/lbp576/data-analysis-replication/blob/main/images/Fig1A.JPG")
+```
+
+
+
+
+FIGURE 1B BOX PLOT REPLICATION 
+
+Box plot description: Box plot showing the distribution of the numerical data for Delta Ct in either the control or infected groups.  
+
+```{r}
+
+# Box plot for fig 1B (Enzyme: HpaII)
+fig1B <- boxplot(data$Change_in_CT ~ data$Infected,
           ylab="Change in Ct", 
           xlab = "",                        
           main="HpaII boxplot",
           color = "group", 
           col=c("light green","red"))
+```
+
+Box plot Interpretation: On average, Toxoplasma gondii infection resulted in larger Delta Ct values (more negative) for data corresponding to infected rats compared to data for rats not infected. This comparatively large Delta Ct seen in the infected group is due to increase in hypomethylation and higher HpaII mediated degradation of non-methlyated AVP-DNA compared to control group. The inter-group difference visualized here is striking: the 75th percentile of Delta Ct values in the infected was placed below the 25th percentile of control animals.     
 
 
+Fig 1B Box Plot from paper for comparison: 
+
+```{r eco=FLASE, Width="300px", message=FALSE}
+knitr::include_graphics("https://github.com/lbp576/data-analysis-replication/blob/main/images/Fig1B.JPG")
+```
+
+
+
+
+
+
+
+
+```{r}
 ## T-statistic
 t.test(data$Without_Enzyme)
 
@@ -126,49 +184,95 @@ source('https://tinyurl.com/y4krd9uy')
 simple_anova(model2)
 
 ###alternative method ("bootstrapping") to using lm function for regression
-boot_lm1 = do(10000)*lm(Change_in_CT ~ Infected, data=resample(data))
+#boot_lm1 = do(10000)*lm(Change_in_CT ~ Infected, data=resample(data))
 
-confint(boot_lm1) %>%
-  mutate_if(is.numeric, round, digits=3)
+#confint(boot_lm1) %>%
+  #mutate_if(is.numeric, round, digits=3)
 
 ### A model which accounts for an interaction term with animals being infected and are with enzyme HpaII
 model3 <- lm(Change_in_CT ~ Infected + Without_Enzyme + With_Enzyme + Infected*With_Enzyme, data=data)
 summary(model3)
 
-
-#####################################
-###### FIG 1B #########
+```
 
 
-#importing the dataset from the folder
-library(readxl)
-data1 <- read_xlsx('fig1B.xlsx')
 
-#to view the entire dataframe (excel sheet)
-data1
 
-#how to view/read data using head()
-head(data1)
 
-## Scatter plot for fig 1B (Enzyme: BstUI)
-s <- ggplot(data=data1, aes(x=Without_Enzyme, y=With_Enzyme, colour = Infected)) 
+
+
+FIGURE 1B SCATTER PLOT REPLICATION 
+
+Scatter plot description: Scatter Plot of Ct values (X= Ct without enzyme, Y=Ct with enzyme) for both control (Pink) and infected (Blue) groups. (y = x line indicates equal Ct for both enzyme and non-enzyme treated assays)
+
+
+```{r}
+
+
+#importing and visualizing the data set from github repository  
+
+data2 <- read_csv("https://raw.githubusercontent.com/lbp576/data-analysis-replication/main/data/fig1CD.csv")
+
+#to view the entire data frame 
+data2
+
+#to view/read data using head()
+head(data2)
+
+
+
+#Scatter Plot for Fig 1C (Enzyme: BstUI)
+s <- ggplot(data=data2, aes(x=Without_Enzyme, y=With_Enzyme, colour = Infected)) 
 s <- s + geom_point(size=3, show.legend=TRUE)
 #geom_line function is used here to indicate zero methylation
 s <- s + geom_abline()
 s
+```
 
-### Box plot for fig 1B (Enzyme: BstUI)
-fig1B <- boxplot(data1$Change_in_CT ~ data1$Infected,
+Scatter plot interpretation: Toxoplasma gondii infection resulted in higher Ct value in BstUI enzyme treated assays compared to assays with no enzyme treatment. Both control and infected groups showed increase in Ct values after enzyme treatment; however, the distance from y = x line was larger for data points corresponding to the infected group (Blue) compared to control (Pink). 
+
+
+Fig 1C scatter plot from paper for comparison: 
+
+```{r eco=FLASE, Width="300px", message=FALSE}
+knitr::include_graphics("https://github.com/lbp576/data-analysis-replication/blob/main/images/Fig1C.JPG")
+```
+
+
+
+
+FIGURE 1D BOX PLOT REPLICATION 
+
+Box plot description: Box plot showing the distribution of the numerical data for Delta Ct in either the control or infected groups this time with BstUI enzyme treatment.  
+
+
+```{r}
+
+#Box plot for fig 1D (Enzyme: BstUI)
+fig1D <- boxplot(data2$Change_in_CT ~ data2$Infected,
                  ylab="Change in Ct", 
                  xlab = "",                        
                  main="BstUI boxplot",
                  color = "group", 
                  col=c("light green","red"))
 
+```
+
+Box plot Interpretation: On average, Toxoplasma gondii infection resulted in larger Delta Ct values (more negative) for data corresponding to infected rats compared to data for rats not infected. This comparatively large Delta Ct seen in the infected group is due to increase in hypomethylation and higher HpaII mediated degradation of non-methlyated AVP-DNA compared to control group. The inter-group difference visualized here is striking: the 75th percentile of Delta Ct values in the infected was placed below the 25th percentile of control animals.     
+
+
+Fig 1D Box Plot from paper for comparison: 
+
+```{r eco=FLASE, Width="300px", message=FALSE}
+knitr::include_graphics("https://github.com/lbp576/data-analysis-replication/blob/main/images/Fig1D.JPG")
+```
+
+
+```{r}
 ### regression fig1B (scatterplot and boxplot on page 4 of the paper)
 
 #Statistical Linear regression model to analyze the impact of enzyme in the experiment on the change in Ct value
-model4 <- lm(Change_in_CT ~ Without_Enzyme + With_Enzyme, data = data1)
+model4 <- lm(Change_in_CT ~ Without_Enzyme + With_Enzyme, data = data2)
 #summary statistics / descriptive statistical analysis (note that this is essentially perfect fit meaning summary may be unreliable)
 #the negative intercept means that baseline estimated value for change in Ct is negative (biologically harmful to the animal or depicting unhealthy or carrying disease)
 #p-value: < 2.2e-16 which is lesser than 0.05 meaning that our model is statistically significant
@@ -180,7 +284,7 @@ summary(model4)
 
 #Statistical Linear regression model to analyze the effect of experiment participants (animals) being infected on the change in Ct value due to HpaII enzyme
 ## The difference between the Change in Ct for animals that are infected vs non-infected depicts the different in time that it takes the polymerace to make 1000 copies of AVP
-model5 <- lm(Change_in_CT ~ Infected, data=data1)
+model5 <- lm(Change_in_CT ~ Infected, data=data2)
 #summary statistics / descriptive statistical analysis (note that this is essentially perfect fit meaning summary may be unreliable)
 #the negative intercept means that baseline estimated value for change in Ct is negative (biologically harmful to the animal or depicting unhealthy or carrying disease)
 #p-value: 0.008398 which is lesser than 0.05 meaning that our model is statistically significant
